@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简易网页爬虫 · 采集器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #f6f9fc 0%, #e6f0f5 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .crawler-card {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            box-shadow: 0 20px 40px -10px rgba(0, 30, 50, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.6);
+            padding: 2rem 2rem 2rem 2rem;
+            transition: all 0.2s;
+        }
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            color: #0b2b44;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h1 span {
+            background: #0f6e9e;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            letter-spacing: 0.3px;
+        }
+        .subhead {
+            color: #2c5775;
+            margin-bottom: 1.8rem;
+            font-size: 0.98rem;
+            border-left: 4px solid #0f6e9e;
+            padding-left: 1rem;
+            background: #e2f0f9;
+            border-radius: 0 12px 12px 0;
+            line-height: 1.4;
+            padding: 0.75rem 1rem;
+        }
+        .url-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            align-items: center;
+        }
+        .url-input {
+            flex: 3;
+            min-width: 240px;
+            padding: 0.9rem 1.2rem;
+            border: 2px solid #cbdde8;
+            border-radius: 60px;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.2s;
+            background: white;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .url-input:focus {
+            border-color: #0f6e9e;
+            box-shadow: 0 0 0 4px rgba(15, 110, 158, 0.15);
+        }
+        .crawl-btn {
+            background: #0f6e9e;
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 0.9rem 2rem;
+            border-radius: 60px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: 0.15s;
+            box-shadow: 0 8px 14px -6px #0f6e9e80;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 120px;
+        }
+        .crawl-btn:hover {
+            background: #0b5377;
+            transform: scale(1.01);
+        }
+        .crawl-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 4px 8px -3px #0f6e9e;
+        }
+        .crawl-btn:disabled {
+            background: #97b8cc;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+            background: #eef5fa;
+            padding: 1rem 1.5rem;
+            border-radius: 40px;
+            margin-bottom: 1.8rem;
+            align-items: center;
+        }
+        .option-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 0.35rem 1rem 0.35rem 1.2rem;
+            border-radius: 40px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .option-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #1f4963;
+            white-space: nowrap;
+        }
+        .option-group select {
+            padding: 0.4rem 0.6rem;
+            border-radius: 30px;
+            border: 1px solid #b6d0e0;
+            background: white;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            color: #0b2b44;
+            font-weight: 500;
+        }
+        .status-badge {
+            margin-left: auto;
+            font-size: 0.9rem;
+            color: #3d6a8a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2.5px solid rgba(15, 110, 158, 0.2);
+            border-top-color: #0f6e9e;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .results-container {
+            background: #0b1e2b;
+            border-radius: 28px;
+            padding: 1.5rem;
+            color: #d9e9f5;
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.3), 0 6px 12px rgba(0,0,0,0.1);
+            min-height: 260px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 0.95rem;
+            border: 1px solid #1b4057;
+        }
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #1f4158;
+            padding-bottom: 0.7rem;
+            color: #a8cbdf;
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .result-item {
+            background: #112c3c;
+            padding: 0.8rem 1rem;
+            border-radius: 16px;
+            border-left: 6px solid #2b8bb8;
+            color: #ecf5fb;
+            word-break: break-word;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .result-item a {
+            color: #8fcbff;
+            text-decoration: none;
+            border-bottom: 1px dashed #3d7ea3;
+        }
+        .result-item a:hover {
+            color: #c0e2ff;
+            border-bottom-color: #8fcbff;
+        }
+        .empty-state {
+            color: #6f8fa5;
+            text-align: center;
+            padding: 2rem 1rem;
+            font-style: italic;
+            font-size: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+        .error-msg {
+            background: #3b2020;
+            border-left-color: #c0392b;
+            color: #ffbaba;
+        }
+        .tag {
+            display: inline-block;
+            background: #0f6e9e30;
+            color: #9ac9e6;
+            border-radius: 30px;
+            padding: 0.1rem 0.6rem;
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="crawler-card">
+        <h1>
+            🕷️ 简易网页爬虫
+            <span>HTML采集</span>
+        </h1>
+        <div class="subhead">
+            ⚡ 输入目标网址，选择要提取的 HTML 元素类型。结果会显示在下方。
+        </div>
+
+        <!-- URL 输入区 -->
+        <div class="url-panel">
+            <input type="text" id="urlInput" class="url-input" placeholder="https://example.com" value="https://example.com" spellcheck="false">
+            <button id="crawlBtn" class="crawl-btn">
+                <span>▶</span> 爬取
+            </button>
+        </div>
+
+        <!-- 选项栏 -->
+        <div class="options">
+            <div class="option-group">
+                <label for="selectorType">提取</label>
+                <select id="selectorType">
+                    <option value="a" selected>链接 (a[href])</option>
+                    <option value="h1">标题 H1</option>
+                    <option value="h2">标题 H2</option>
+                    <option value="h3">标题 H3</option>
+                    <option value="p">段落 P</option>
+                    <option value="img">图片 (img[src])</option>
+                    <option value="li">列表项 LI</option>
+                    <option value="div">区块 DIV</option>
+                    <option value="span">内联 SPAN</option>
+                </select>
+            </div>
+            <div class="option-group">
+                <label for="maxItems">最多条数</label>
+                <select id="maxItems">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                </select>
+            </div>
+            <div class="status-badge" id="statusBadge">
+                <span id="statusText">就绪</span>
+            </div>
+        </div>
+
+        <!-- 结果展示区 -->
+        <div class="results-container" id="resultsContainer">
+            <div class="results-header">
+                <span>📋 采集结果</span>
+                <span id="resultCount">0 项</span>
+            </div>
+            <div id="resultsList" class="results-list">
+                <div class="empty-state">
+                    <span>🌐</span>
+                    尚未爬取任何网页<br>
+                    <small>点击“爬取”开始采集</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // DOM 元素
+            const urlInput = document.getElementById('urlInput');
+            const crawlBtn = document.getElementById('crawlBtn');
+            const selectorType = document.getElementById('selectorType');
+            const maxItemsSelect = document.getElementById('maxItems');
+            const resultsList = document.getElementById('resultsList');
+            const resultCountSpan = document.getElementById('resultCount');
+            const statusText = document.getElementById('statusText');
+            const statusBadge = document.getElementById('statusBadge');
+
+            // 辅助：更新状态
+            function setStatus(text, isLoading = false) {
+                statusText.textContent = text;
+                // 可以附加 spinner 样式，简单起见只改文字
+                if (isLoading) {
+                    statusBadge.innerHTML = `<span class="spinner"></span><span id="statusText">${text}</span>`;
+                } else {
+                    statusBadge.innerHTML = `<span id="statusText">${text}</span>`;
+                }
+            }
+
+            // 辅助：清空并显示消息
+            function showEmpty(message, isError = false) {
+                resultsList.innerHTML = `
+                    <div class="empty-state ${isError ? 'error-msg' : ''}">
+                        <span>${isError ? '⚠️' : '🔍'}</span>
+                        ${message}
+                    </div>
+                `;
+                resultCountSpan.textContent = '0 项';
+            }
+
+            // 渲染结果列表
+            function renderResults(items, type) {
+                if (!items || items.length === 0) {
+                    showEmpty('没有找到匹配的元素。');
+                    return;
+                }
+
+                const fragment = document.createDocumentFragment();
+                items.forEach((item) => {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    
+                    // 针对不同元素类型做适配显示
+                    if (type === 'a') {
+                        // item 是 { text, href }
+                        const linkText = item.text?.trim() || '(无文本)';
+                        const href = item.href || '#';
+                        // 防止 XSS 但保留链接功能 - 用 textContent 处理文本，href 通过 setAttribute
+                        const a = document.createElement('a');
+                        a.href = href;
+                        a.textContent = linkText;
+                        a.target = '_blank';
+                        a.rel = 'noopener noreferrer';
+                        // 如果链接过长，截断显示
+                        if (linkText.length > 80) {
+                            a.textContent = linkText.slice(0, 80) + '…';
+                        }
+                        div.appendChild(a);
+                        // 附加显示原始 URL (截断)
+                        const urlSpan = document.createElement('span');
+                        urlSpan.style.color = '#7a9eb3';
+                        urlSpan.style.fontSize = '0.75rem';
+                        urlSpan.style.marginLeft = '8px';
+                        urlSpan.textContent = href.length > 50 ? href.slice(0, 50) + '…' : href;
+                        div.appendChild(urlSpan);
+                    } else if (type === 'img') {
+                        // item 是 { src, alt }
+                        const img = document.createElement('img');
+                        img.src = item.src || '';
+                        img.alt = item.alt || '图片';
+                        img.style.maxHeight = '40px';
+                        img.style.maxWidth = '80px';
+                        img.style.borderRadius = '6px';
+                        img.style.verticalAlign = 'middle';
+                        img.style.marginRight = '10px';
+                        img.onerror = () => { img.style.display = 'none'; };
+                        const span = document.createElement('span');
+                        span.textContent = item.src || '(无 src)';
+                        span.style.fontSize = '0.85rem';
+                        span.style.wordBreak = 'break-all';
+                        div.appendChild(img);
+                        div.appendChild(span);
+                    } else {
+                        // 普通文本: 直接显示内容，若为空则显示占位
+                        const content = item.text?.trim() || '(空内容)';
+                        div.textContent = content.length > 200 ? content.slice(0, 200) + '…' : content;
+                        // 显示标签标记
+                        const tag = document.createElement('span');
+                        tag.className = 'tag';
+                        tag.textContent = type.toUpperCase();
+                        div.appendChild(tag);
+                    }
+                    fragment.appendChild(div);
+                });
+
+                resultsList.innerHTML = '';
+                resultsList.appendChild(fragment);
+                resultCountSpan.textContent = `${items.length} 项`;
+            }
+
+            // 核心爬取函数 (模拟请求，实际使用 fetch 获取 HTML 并解析)
+            async function crawl() {
+                const rawUrl = urlInput.value.trim();
+                if (!rawUrl) {
+                    showEmpty('请输入有效的网址', true);
+                    setStatus('URL 为空');
+                    return;
+                }
+
+                // 简单补全协议
+                let targetUrl = rawUrl;
+                if (!/^https?:\/\//i.test(targetUrl)) {
+                    targetUrl = 'https://' + targetUrl;
+                }
+
+                // 尝试解析 URL，若无效则提示
+                try {
+                    new URL(targetUrl);
+                } catch (e) {
+                    showEmpty('网址格式不正确', true);
+                    setStatus('URL 无效');
+                    return;
+                }
+
+                const type = selectorType.value;
+                const maxItems = parseInt(maxItemsSelect.value, 10) || 10;
+
+                // 更新 UI 状态: 加载中
+                setStatus('爬取中…', true);
+                crawlBtn.disabled = true;
+                showEmpty('正在抓取页面，请稍候…');
+                resultCountSpan.textContent = '加载中';
+
+                try {
+                    // 使用 fetch 获取目标网页内容 (注意跨域限制，此处为演示，若跨域可能失败)
+                    // 添加超时控制 (7 秒)
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 7000);
+
+                    const response = await fetch(targetUrl, {
+                        signal: controller.signal,
+                        headers: {
+                            // 部分网站可能需要 UA，这里加一个通用 UA 避免被简单拦截
+                            'User-Agent': 'Mozilla/5.0 (compatible; SimpleCrawler/1.0)'
+                        }
+                    }).finally(() => clearTimeout(timeoutId));
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status} ${response.statusText}`);
+                    }
+
+                    const htmlText = await response.text();
+                    
+                    // 解析 HTML
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(htmlText, 'text/html');
+
+                    // 根据选择类型提取元素
+                    let elements = [];
+                    let items = [];
+
+                    switch (type) {
+                        case 'a':
+                            elements = Array.from(doc.querySelectorAll('a[href]'));
+                            items = elements.slice(0, maxItems).map(el => ({
+                                text: el.textContent.trim(),
+                                href: el.getAttribute('href') || ''
+                            }));
+                            // 相对链接转绝对 (可选，更好展示)
+                            items = items.map(item => {
+                                if (item.href && !/^https?:\/\//i.test(item.href) && !item.href.startsWith('#') && !item.href.startsWith('mailto:')) {
+                                    try {
+                                        item.href = new URL(item.href, targetUrl).href;
+                                    } catch (e) { /* 保留原样 */ }
+                                }
+                                return item;
+                            });
+                            break;
+                        case 'img':
+                            elements = Array.from(doc.querySelectorAll('img[src]'));
+                            items = elements.slice(0, maxItems).map(el => ({
+                                src: el.getAttribute('src') || '',
+                                alt: el.getAttribute('alt') || ''
+                            }));
+                            items = items.map(item => {
+                                if (item.src && !/^https?:\/\//i.test(item.src) && !item.src.startsWith('data:')) {
+                                    try {
+                                        item.src = new URL(item.src, targetUrl).href;
+                                    } catch (e) {}
+                                }
+                                return item;
+                            });
+                            break;
+                        default:
+                            // h1, h2, h3, p, li, div, span 等直接用 textContent
+                            elements = Array.from(doc.querySelectorAll(type));
+                            items = elements.slice(0, maxItems).map(el => ({
+                                text: el.textContent.trim()
+                            }));
+                            break;
+                    }
+
+                    // 过滤掉空内容的项 (除了图片可以保留 src)
+                    if (type !== 'img') {
+                        items = items.filter(item => item.text && item.text.length > 0);
+                    } else {
+                        items = items.filter(item => item.src && item.src.trim().length > 0);
+                    }
+
+                    // 重新截取，因为过滤后可能变少
+                    items = items.slice(0, maxItems);
+
+                    if (items.length === 0) {
+                        showEmpty(`未找到任何 ${type} 元素。`);
+                        setStatus('完成 · 0 项');
+                    } else {
+                        renderResults(items, type);
+                        setStatus(`完成 · ${items.length} 项`);
+                    }
+
+                } catch (error) {
+                    console.error('爬取失败:', error);
+                    let errMsg = error.message;
+                    if (error.name === 'AbortError') {
+                        errMsg = '请求超时 (7秒)';
+                    } else if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError')) {
+                        errMsg = '网络错误或跨域限制 (CORS)。请确保目标网站允许跨域请求。';
+                    } else if (errMsg.includes('HTTP')) {
+                        errMsg = `请求失败: ${errMsg}`;
+                    }
+                    showEmpty(`爬取失败: ${errMsg}`, true);
+                    setStatus('出错');
+                } finally {
+                    crawlBtn.disabled = false;
+                }
+            }
+
+            // 绑定事件
+            crawlBtn.addEventListener('click', crawl);
+            // 回车也可以触发
+            urlInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    crawl();
+                }
+            });
+
+            // 初始化状态
+            setStatus('就绪');
+        })();
+    </script>
+</body>
+</html>
